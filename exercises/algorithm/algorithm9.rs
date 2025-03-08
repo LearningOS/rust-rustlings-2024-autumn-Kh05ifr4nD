@@ -1,154 +1,107 @@
 /*
-	heap
-	This question requires you to implement a binary heap function
+  queue
+  This question requires you to use queues to implement the functionality of the stac
 */
-// I AM NOT DONE
 
-use std::cmp::Ord;
-use std::default::Default;
-
-pub struct Heap<T>
-where
-    T: Default,
-{
-    count: usize,
-    items: Vec<T>,
-    comparator: fn(&T, &T) -> bool,
+#[derive(Debug)]
+pub struct Queue<T> {
+  data: Vec<T>,
 }
 
-impl<T> Heap<T>
-where
-    T: Default,
-{
-    pub fn new(comparator: fn(&T, &T) -> bool) -> Self {
-        Self {
-            count: 0,
-            items: vec![T::default()],
-            comparator,
-        }
-    }
+impl<T> Queue<T> {
+  pub fn new() -> Queue<T> {
+    Queue { data: Vec::new() }
+  }
 
-    pub fn len(&self) -> usize {
-        self.count
-    }
+  pub fn push(&mut self, val: T) {
+    self.data.push(val);
+  }
 
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
+  pub fn pop(&mut self) -> Option<T> {
+    if self.empty() {
+      None
+    } else {
+      Some(self.data.remove(0))
     }
+  }
 
-    pub fn add(&mut self, value: T) {
-        //TODO
-    }
+  pub fn front(&self) -> Option<&T> {
+    self.data.first()
+  }
 
-    fn parent_idx(&self, idx: usize) -> usize {
-        idx / 2
-    }
+  pub fn back(&self) -> Option<&T> {
+    self.data.last()
+  }
 
-    fn children_present(&self, idx: usize) -> bool {
-        self.left_child_idx(idx) <= self.count
-    }
+  pub fn size(&self) -> usize {
+    self.data.len()
+  }
 
-    fn left_child_idx(&self, idx: usize) -> usize {
-        idx * 2
-    }
-
-    fn right_child_idx(&self, idx: usize) -> usize {
-        self.left_child_idx(idx) + 1
-    }
-
-    fn smallest_child_idx(&self, idx: usize) -> usize {
-        //TODO
-		0
-    }
+  pub fn empty(&self) -> bool {
+    self.data.is_empty()
+  }
 }
 
-impl<T> Heap<T>
-where
-    T: Default + Ord,
-{
-    /// Create a new MinHeap
-    pub fn new_min() -> Self {
-        Self::new(|a, b| a < b)
-    }
-
-    /// Create a new MaxHeap
-    pub fn new_max() -> Self {
-        Self::new(|a, b| a > b)
-    }
+impl<T> Default for Queue<T> {
+  fn default() -> Queue<T> {
+    Queue { data: Vec::new() }
+  }
 }
 
-impl<T> Iterator for Heap<T>
-where
-    T: Default,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<T> {
-        //TODO
-		None
-    }
+pub struct DummyStack<T> {
+  q1: Queue<T>,
+  q2: Queue<T>,
 }
-
-pub struct MinHeap;
-
-impl MinHeap {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new<T>() -> Heap<T>
-    where
-        T: Default + Ord,
-    {
-        Heap::new(|a, b| a < b)
+impl<T> DummyStack<T> {
+  pub fn new() -> Self {
+    Self { q1: Queue::new(), q2: Queue::new() }
+  }
+  pub fn push(&mut self, elem: T) {
+    self.q1.push(elem);
+  }
+  pub fn pop(&mut self) -> Result<T, &str> {
+    if self.empty() {
+      return Err("Stack is empty");
     }
-}
 
-pub struct MaxHeap;
-
-impl MaxHeap {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new<T>() -> Heap<T>
-    where
-        T: Default + Ord,
-    {
-        Heap::new(|a, b| a > b)
+    while self.q1.size() > 1 {
+      if let Some(val) = self.q1.pop() {
+        self.q2.push(val);
+      }
     }
+
+    let rslt = self.q1.pop().ok_or("Stack is empty");
+
+    std::mem::swap(&mut self.q1, &mut self.q2);
+
+    rslt
+  }
+
+  pub fn empty(&self) -> bool {
+    self.q1.empty() && self.q2.empty()
+  }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    #[test]
-    fn test_empty_heap() {
-        let mut heap = MaxHeap::new::<i32>();
-        assert_eq!(heap.next(), None);
-    }
+  use super::*;
 
-    #[test]
-    fn test_min_heap() {
-        let mut heap = MinHeap::new();
-        heap.add(4);
-        heap.add(2);
-        heap.add(9);
-        heap.add(11);
-        assert_eq!(heap.len(), 4);
-        assert_eq!(heap.next(), Some(2));
-        assert_eq!(heap.next(), Some(4));
-        assert_eq!(heap.next(), Some(9));
-        heap.add(1);
-        assert_eq!(heap.next(), Some(1));
-    }
-
-    #[test]
-    fn test_max_heap() {
-        let mut heap = MaxHeap::new();
-        heap.add(4);
-        heap.add(2);
-        heap.add(9);
-        heap.add(11);
-        assert_eq!(heap.len(), 4);
-        assert_eq!(heap.next(), Some(11));
-        assert_eq!(heap.next(), Some(9));
-        assert_eq!(heap.next(), Some(4));
-        heap.add(1);
-        assert_eq!(heap.next(), Some(2));
-    }
+  #[test]
+  fn test_queue() {
+    let mut s = DummyStack::<i32>::new();
+    assert_eq!(s.pop(), Err("Stack is empty"));
+    s.push(1);
+    s.push(2);
+    s.push(3);
+    assert_eq!(s.pop(), Ok(3));
+    assert_eq!(s.pop(), Ok(2));
+    s.push(4);
+    s.push(5);
+    assert_eq!(s.empty(), false);
+    assert_eq!(s.pop(), Ok(5));
+    assert_eq!(s.pop(), Ok(4));
+    assert_eq!(s.pop(), Ok(1));
+    assert_eq!(s.pop(), Err("Stack is empty"));
+    assert_eq!(s.empty(), true);
+  }
 }
